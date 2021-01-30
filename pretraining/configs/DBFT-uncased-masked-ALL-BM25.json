@@ -1,0 +1,16 @@
+{
+    "datapath_l": "/lfs/1/sahaana/enrichment/data/imdb/final_table_nogenre.pkl",
+    "datapath_r": "/lfs/1/sahaana/enrichment/data/wikidata/wikidata-processor/data/queries/movies/final_table_nogenre.pkl",
+    "bm25_argsort_path": "/lfs/1/sahaana/enrichment/data/Okapi25Queries/imdb_bm25Okapi_summaries_nogenre_argsort.npy",
+    "model_type": "distilbert",
+    "tokenizer_casing": "uncased",
+    "from_scratch": false,
+    "mlm_probability": 0.15,
+    "mlm_num_seps": null,
+    "mlm_masking": "ALL",
+    "num_train": 40000,
+    "data_column": "merged_nogenre",
+    "model_name": "DBFT-uncased-masked-ALL-BM25",
+    "train_epochs": 20,
+    "batch_size": 8
+}

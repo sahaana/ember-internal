@@ -48,7 +48,7 @@ def train_MLM(config):
             model = BertForMaskedLM(config=model_config).from_pretrained(f"bert-base-{conf.tokenizer_casing}")
     
     # Training Data
-    train_idx, test_idx = sequential_tt_split(len(data_l), conf.num_train)
+    train_idx, test_idx = sequential_tt_split(len(data_l), conf.num_train, conf.num_test)
     train_data_l = data_l.iloc[train_idx]
     test_data_l = data_l.iloc[test_idx]
     train_data_r = data_r.iloc[train_idx]

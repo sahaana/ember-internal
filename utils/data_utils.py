@@ -14,7 +14,12 @@ def sample_excluding(n: int,
 def sequential_tt_split(n: int,
                         n_train: int,
                         n_test: int) -> (np.array, np.array):
-    indices = np.arange(n)
+    if n_train + n_test > n:
+        print("BAD SPLIT")
+        return [], []
+    indices = np.arange(n - 1)
+    if n_test == 0:
+        return indices, np.array([])
     train_idx = indices[:n_train]
     test_idx = indices[-n_test:]    
     return train_idx, test_idx

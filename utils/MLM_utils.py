@@ -4,6 +4,7 @@ from typing import List, Union, Dict, Optional, Tuple
 import pandas as pd
 import numpy as np
 from pandarallel import pandarallel
+from rank_bm25 import BM25Okapi
 
 import torch 
 from transformers import PreTrainedTokenizerBase, BatchEncoding
@@ -116,6 +117,41 @@ class DataCollatorForEnrich:
 
         # The rest of the time (10% of the time) we keep the masked input tokens unchanged
         return inputs, labels
+
+class DM_Okapi25MLMDataset(torch.utils.data.Dataset):
+    def __init__(self, 
+                 df_l: pd.DataFrame, 
+                 df_r: pd.DataFrame,
+                 tokenizer: PreTrainedTokenizerBase,
+                 n_pairs_multiplier: int = 3,
+                 data_col = 'merged',
+                 max_len:int = 512, 
+                 index_bm25 = True,
+                 bm25_argsort = None):
+        self.df_l = df_l.copy()[data_col]
+        self.df_r = df_r.copy()[data_col]
+        self.bm25_argsort = bm25_argsort 
+        self.tokenizer = tokenizer
+        self.n_pairs = len(df_l) * n_pairs_multiplier
+        self.pairs = self.gen_pairs(n_pairs_multiplier) #needs to be after init_okapi25()
+        self.max_len = max_len
+        
+    def gen_pairs(self, n_pairs_multiplier):
+        pairs = []
+        for i in range(len(self.df_l)):
+            idx_l = i
+            for j in range(1, 1 + n_pairs_multiplier):
+                idx_r = self.bm25_argsort[i, -j]
+                pairs.append([idx_l, idx_r])
+        return np.array(pairs)
+
+    def __len__(self):
+        return self.n_pairs
+
+    def __getitem__(self, idx):
+        l, r = self.pairs[idx]
+        return {'input_ids': self.tokenizer(self.df_l[l] + ' [SEP] ' + self.df_r[r], 
+                                            max_length=self.max_len, truncation=True)['input_ids']}    
     
 class Okapi25MLMDataset(torch.utils.data.Dataset):
     def __init__(self, 
@@ -161,7 +197,7 @@ class Okapi25MLMDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         l, r = self.pairs[idx]
-        return {'input_ids': self.tokenizer(self.df_l[l] + self.df_r[r], 
+        return {'input_ids': self.tokenizer(self.df_l[l] + ' [SEP] ' + self.df_r[r], 
                                             max_length=self.max_len, truncation=True)['input_ids']}
 
 

@@ -10,8 +10,8 @@ from transformers import AutoTokenizer
 from transformers import DistilBertConfig, DistilBertForMaskedLM, BertConfig, BertForMaskedLM
 from transformers import pipeline, Trainer, TrainingArguments
 
-sys.path.append('/lfs/1/sahaana/enrichment/context-enrichment/utils')
-from MLM_utils import DataCollatorForEnrich, Okapi25MLMDataset
+sys.path.append('/lfs/1/sahaana/enrichment/ember/utils')
+from MLM_utils import DataCollatorForEnrich, DM_Okapi25MLMDataset
 from data_utils import sequential_tt_split
 from file_utils import load_config
 
@@ -22,7 +22,7 @@ def train_MLM(config):
     data_l = pd.read_pickle(conf.datapath_l)
     data_r = pd.read_pickle(conf.datapath_r)
     bm25_argsort = np.load(conf.bm25_argsort_path)
-    model_out = f"/lfs/1/sahaana/enrichment/context-enrichment/pretraining/models/{conf.model_name}"
+    model_out = f"/lfs/1/sahaana/enrichment/ember/pretraining/models/{conf.model_name}"
     
     # Tokenizer
     bert_tokenizer = AutoTokenizer.from_pretrained(f'{conf.model_type}-base-uncased')
@@ -49,17 +49,22 @@ def train_MLM(config):
     
     # Training Data
     train_idx, test_idx = sequential_tt_split(len(data_l), conf.num_train, conf.num_test)
-    train_data_l = data_l.iloc[train_idx]
-    test_data_l = data_l.iloc[test_idx]
-    train_data_r = data_r.iloc[train_idx]
-    test_data_r = data_r.iloc[test_idx]
-    train_bm25 = bm25_argsort[train_idx]
-    test_bm25 = bm25_argsort[test_idx]
+    if conf.num_test == 0:
+        train_data_l = data_l
+        train_data_r = data_r
+        train_bm25 = bm25_argsort
+    else: 
+        train_data_l = data_l.iloc[train_idx]
+        ###test_data_l = data_l.iloc[test_idx]
+        train_data_r = data_r.iloc[train_idx]
+        ###test_data_r = data_r.iloc[test_idx]
+        train_bm25 = bm25_argsort[train_idx]
+        ###test_bm25 = bm25_argsort[test_idx]
 
     # Training Configs
-    train_dataset = Okapi25MLMDataset(train_data_l, train_data_r, 
-                                      bert_tokenizer, data_col=conf.data_column, 
-                                      index_bm25=False, bm25_argsort=train_bm25)
+    train_dataset = DM_Okapi25MLMDataset(train_data_l, train_data_r, 
+                                         bert_tokenizer, data_col=conf.data_column, 
+                                         index_bm25=False, bm25_argsort=train_bm25)
     
     training_args = TrainingArguments(output_dir=model_out,
                                       overwrite_output_dir=True,

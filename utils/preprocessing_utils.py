@@ -32,3 +32,23 @@ def merge_columns(df: pd.DataFrame,
         df[new_col] =  df[new_col] + f" {separator} " + f" {col} " + df[col].astype(str)
     df.to_pickle(f_path)
     return df
+
+def reindex_deepmatcher(l_df: pd.DataFrame,
+                        r_df: pd.DataFrame,
+                        idx_df: pd.DataFrame) -> pd.DataFrame:
+    df_updated = {}
+    r_values = []
+    l_values = []
+    labels = []
+    for idx, row in idx_df.iterrows():
+        l_value = l_df[l_df['id'] == row['ltable_id']].index[0]
+        r_value = r_df[r_df['id'] == row['rtable_id']].index[0]
+        
+        l_values += [l_value]
+        r_values += [r_value]
+        labels += [row['label']]
+        
+    df_updated['ltable_id'] = l_values
+    df_updated['rtable_id'] = r_values
+    df_updated['label'] = labels
+    return pd.DataFrame(df_updated)

@@ -1,0 +1,17 @@
+{
+    "datapath_l": "/lfs/1/sahaana/enrichment/data/MSMARCO/tableA_processed.pkl",
+    "datapath_r": "/lfs/1/sahaana/enrichment/data/MSMARCO/tableB_processed.pkl",
+    "supervision": "/lfs/1/sahaana/enrichment/data/MSMARCO/top1000.pidqid.pkl",
+    "model_type": "distilbert",
+    "tokenizer_casing": "uncased",
+    "from_scratch": false,
+    "mlm_probability": 0.15,
+    "mlm_num_seps": null,
+    "mlm_masking": "ALL",
+    "num_train": 478002393,
+    "num_test": 0,
+    "data_column": "merged_all",
+    "model_name": "MARCO-1K-uncased-masked-ALL-1-epoch",
+    "train_epochs": 1,
+    "batch_size": 8
+}

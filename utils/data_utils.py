@@ -15,7 +15,7 @@ def sequential_tt_split(n: int,
                         n_train: int,
                         n_test: int) -> (np.array, np.array):
     if n_train + n_test > n:
-        print("BAD SPLIT")
+        print("BAD TT_SPLIT")
         return [], []
     indices = np.arange(n - 1)
     if n_test == 0:

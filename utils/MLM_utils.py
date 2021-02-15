@@ -133,7 +133,7 @@ class DM_Okapi25MLMDataset(torch.utils.data.Dataset):
         self.bm25_argsort = bm25_argsort 
         self.tokenizer = tokenizer
         self.n_pairs = len(df_l) * n_pairs_multiplier
-        self.pairs = self.gen_pairs(n_pairs_multiplier) #needs to be after init_okapi25()
+        self.pairs = self.gen_pairs(n_pairs_multiplier)
         self.max_len = max_len
         
     def gen_pairs(self, n_pairs_multiplier):
@@ -141,6 +141,7 @@ class DM_Okapi25MLMDataset(torch.utils.data.Dataset):
         for i in range(len(self.df_l)):
             idx_l = i
             for j in range(1, 1 + n_pairs_multiplier):
+                # Negative because the argsort in BM25 functions doesn't have the option to reverse sort order
                 idx_r = self.bm25_argsort[i, -j]
                 pairs.append([idx_l, idx_r])
         return np.array(pairs)
@@ -152,6 +153,70 @@ class DM_Okapi25MLMDataset(torch.utils.data.Dataset):
         l, r = self.pairs[idx]
         return {'input_ids': self.tokenizer(self.df_l[l] + ' [SEP] ' + self.df_r[r], 
                                             max_length=self.max_len, truncation=True)['input_ids']}    
+
+    
+    
+class MARCO_MLMDataset(torch.utils.data.Dataset):
+    def __init__(self, 
+                 df_l: pd.DataFrame, 
+                 df_r: pd.DataFrame,
+                 tokenizer: PreTrainedTokenizerBase,
+                 n_pairs_multiplier: int = 3,
+                 data_col = 'merged',
+                 max_len:int = 512, 
+                 bm25_argsort: pd.DataFrame = None):
+        self.df_l = df_l.copy()[data_col]
+        self.df_r = df_r.copy()[data_col]
+        self.bm25_argsort = bm25_argsort #in this dataset, the bm25 is prepended with the index of the query
+        self.tokenizer = tokenizer
+        self.n_pairs = 0 ## this determined based on input; some entries just don't have enough in the top 1000 list given
+        self.pairs = self.gen_pairs(n_pairs_multiplier) 
+        self.max_len = max_len
+
+    def gen_pairs(self, n_pairs_multiplier):
+        pairs = []
+        for entry in self.bm25_argsort.iterrows():
+            idx_l = entry[0] #in this dataset, the bm25 is prepended with the index of the query
+            bm25_entries = list(entry[1])
+            for j in range(1, 1 + n_pairs_multiplier):
+                idx_r = bm25_entries[-j]
+                if idx_r != -1: ## this won't cause issues by going back to the query index becuase the query index is INDEX 
+                    pairs.append([idx_l, idx_r])
+                    self.n_pairs += 1
+        return np.array(pairs)   
+        
+    def __len__(self):
+        return self.n_pairs
+
+    def __getitem__(self, idx): ##continue this
+        l, r = self.pairs[idx]
+        return {'input_ids': self.tokenizer(self.df_l[l] + ' [SEP] ' + self.df_r[r], 
+                                            max_length=self.max_len, truncation=True)['input_ids']} 
+
+    
+class MARCO_BM25MLMDataset(torch.utils.data.Dataset):
+    def __init__(self, 
+                 df_l: pd.DataFrame, 
+                 df_r: pd.DataFrame,
+                 supervision: pd.DataFrame,
+                 tokenizer: PreTrainedTokenizerBase,
+                 data_col = 'merged',
+                 max_len:int = 512):
+        self.df_l = df_l.copy()[data_col]
+        self.df_r = df_r.copy()[data_col]
+        self.supervision = supervision
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+
+    def __len__(self):
+        return len(self.supervision)
+
+    def __getitem__(self, idx):
+        l = self.supervision.loc[idx].QID
+        r = self.supervision.loc[idx].PID
+        return {'input_ids': self.tokenizer(self.df_l[l] + ' [SEP] ' + self.df_r[r], 
+                                            max_length=self.max_len, truncation=True)['input_ids']}     
+    
     
 class Okapi25MLMDataset(torch.utils.data.Dataset):
     def __init__(self, 
@@ -183,7 +248,7 @@ class Okapi25MLMDataset(torch.utils.data.Dataset):
         pairs = []
         for i in range(len(self.df_l)):
             idx_l = i
-            offset = 0
+            offset = 0 #offset used because pretraining is agnostic
             for j in range(1, 1 + n_pairs_multiplier):
                 idx_r = self.bm25_argsort[i, -(j + offset)]
                 while idx_r > len(self.df_l):

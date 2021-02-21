@@ -10,14 +10,20 @@ from transformers import AutoTokenizer, BertTokenizer, DistilBertTokenizer
 class EmberEvalDataset(torch.utils.data.Dataset):
     def __init__(self, 
                  df: pd.DataFrame, 
-                 data_col: str = 'merged_all'):
+                 data_col: str = 'merged_all',
+                 indexed = False):
         self.df = df.copy()[data_col]
         self.n_samples = len(df)
+        self.indexed = indexed
+        if indexed:
+            self.index = list(df.index)
 
     def __len__(self):
         return self.n_samples
 
     def __getitem__(self, idx: int):
+        if self.indexed:
+            idx = self.index[idx]
         return self.df[idx]
                  
 class EmberTripletDataset(torch.utils.data.Dataset):
@@ -41,7 +47,64 @@ class EmberTripletDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx: int):
         a, p, n = self.triplets[idx]
+        #print(idx, a, p, n)
         return self.df_l[a], self.df_r[p], self.df_r[n]
+
+class MARCODataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        """#triplets = supervision.to_numpy(dtype='object')
+        #np.random.shuffle(triplets) 
+        #return triplets[:self.n_samples]        
+        triples = []
+        a_col = "QID_a"
+        p_col = "SID_p"
+        n_col = "SID_n"
+        if p_col not in supervision.columns:
+            p_col = "PID_p"
+            n_col = "PID_n"
+            
+        for _, record in supervision.iterrows():
+            triples.append((record[a_col], record[p_col], record[n_col]))"""
+        #print("am I here now??")
+        triplets = supervision.to_numpy(dtype='object')
+        #samples = np.random.choice(np.arange(len(triplets)), size=self.n_samples, replace=False)
+        return triplets[:self.n_samples] 
+
+    
+class SQuADDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        """triples = []
+        a_col = "QID_a"
+        p_col = "SID_p"
+        n_col = "SID_n"
+        if p_col not in supervision.columns:
+            p_col = "PID_p"
+            n_col = "PID_n"
+            
+        for _, record in supervision.iterrows():
+            triples.append((record[a_col], record[p_col], record[n_col]))
+            if len(triples) >= self.n_samples:
+                break"""
+        triplets = supervision.to_numpy(dtype='object')
+        #samples = np.random.choice(np.arange(len(triplets)), size=self.n_samples, replace=False)
+        return triplets[:self.n_samples] 
+
+class IMDBWikiDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "IMDB_ID"
+        q_col = "QID"
+        
+        while len(triples) < self.n_samples:
+            for _, record in supervision.iterrows():
+                random_negative = np.random.choice(self.df_r.index)
+                triples.add((record[a_col], record[q_col], random_negative))
+                if len(triples) >= self.n_samples:
+                    return list(triples)
+        return list(triples)
     
 class DeepMatcherDataset(EmberTripletDataset):
     def gen_triplets(self, 
@@ -71,7 +134,8 @@ class DeepMatcherDataset(EmberTripletDataset):
                 a = record.ltable_id
                 p = record.rtable_id
                 if (a, p) not in positive_with_negative:
-                    n = np.random.randint(0,len(self.df_r))
+                    ##n = np.random.randint(0,len(self.df_r)) ## we np random choice this instead
+                    n = np.random.choice(self.df_r.index) 
                     triples.add((a,p,n))
                     num_positive_missed -= 1
                 if len(triples) >= self.n_samples or num_positive_missed <= 0:
@@ -83,7 +147,8 @@ class DeepMatcherDataset(EmberTripletDataset):
                 a = record.ltable_id
                 p = record.rtable_id
                 if (a, p) not in positive_with_negative:
-                    n = np.random.randint(0,len(self.df_r))
+                    ##n = np.random.randint(0,len(self.df_r))  ## np randpm choice this
+                    n = np.random.choice(self.df_r.index) 
                     triples.add((a,p,n))
                 if len(triples) >= self.n_samples:
                     break  

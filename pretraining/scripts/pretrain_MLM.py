@@ -24,7 +24,7 @@ def train_MLM(config):
     model_out = f"/lfs/1/sahaana/enrichment/ember/pretraining/models/{conf.model_name}"
 
     if "MARCO-1K" in conf.model_name:
-        supervision = pd.read_pickle(conf.supervision)
+        supervision = pd.read_pickle(conf.supervision) #this is just using all of the provided BM25 to seed
         # So that in get item you can loc by these guys 
         data_l = data_l.set_index("QID")
         data_r = data_r.set_index("PID")
@@ -34,13 +34,13 @@ def train_MLM(config):
         data_r = data_r.set_index("PID")
         bm25_argsort = pd.read_pickle(conf.bm25_argsort_path)
         supervision = None
-    elif "SQuAD" in conf.model_name:
+    else:#if ("SQuAD" in conf.model_name) or ('imdb_wiki' in conf.model_name):
         # For these workloads, I've made sure that the index is already set, so no need to change index
         bm25_argsort = pd.read_pickle(conf.bm25_argsort_path)
         supervision = None
-    else:
+    """else: #really just for deepmatcher
         bm25_argsort = np.load(conf.bm25_argsort_path)
-        supervision = None
+        supervision = None"""
     
     # Tokenizer
     bert_tokenizer = AutoTokenizer.from_pretrained(f'{conf.model_type}-base-uncased')
@@ -83,14 +83,14 @@ def train_MLM(config):
     if "MARCO-1K" in conf.model_name:
         train_dataset = MARCO_BM25MLMDataset(train_data_l, train_data_r, supervision,
                                              bert_tokenizer, data_col=conf.data_column) 
-    elif ("MARCO" in conf.model_name) or ("SQuAD" in conf.model_name):
+    else:#if ("MARCO" in conf.model_name) or ("SQuAD" in conf.model_name) or ("imdb_wiki" in conf.model_name):
         train_dataset = MARCO_MLMDataset(train_data_l, train_data_r, 
                                          bert_tokenizer, data_col=conf.data_column, 
                                          bm25_argsort=train_bm25)  
-    else: 
+    """else: # deepmatcher
         train_dataset = DM_Okapi25MLMDataset(train_data_l, train_data_r, 
                                              bert_tokenizer, data_col=conf.data_column, 
-                                             index_bm25=False, bm25_argsort=train_bm25)
+                                             index_bm25=False, bm25_argsort=train_bm25)"""
 
     training_args = TrainingArguments(output_dir=model_out,
                                       overwrite_output_dir=True,

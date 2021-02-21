@@ -1,7 +1,7 @@
 {
     "datapath_l": "/lfs/1/sahaana/enrichment/data/deepmatcher/amazon_google_exp_data/tableA_processed.pkl",
     "datapath_r": "/lfs/1/sahaana/enrichment/data/deepmatcher/amazon_google_exp_data/tableB_processed.pkl",
-    "bm25_argsort_path": "/lfs/1/sahaana/enrichment/data/Okapi25Queries/amazon_google_exp_data_argsort.npy",
+    "bm25_argsort_path": "/lfs/1/sahaana/enrichment/data/Okapi25Queries/amazon_google_exp_data_argsort_indices.pkl",
     "model_type": "distilbert",
     "tokenizer_casing": "uncased",
     "from_scratch": false,

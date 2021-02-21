@@ -17,7 +17,10 @@ def param_header(batch_size,
 def save_torch_model(path, model):
     if not os.path.exists(path):
         os.makedirs(path)
-    torch.save(model.state_dict(), path + datetime.now().strftime("%H-%M-%d-%m-%y"))
+    filepath = path + datetime.now().strftime("%H-%M-%d-%m-%y")
+    torch.save(model.state_dict(), filepath)
+    print(f"Saved Model: {filepath}")
+    return filepath
 
     
 def to_cuda(tensor_list, levels):

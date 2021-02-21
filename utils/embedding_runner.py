@@ -11,6 +11,37 @@ def get_cuda_levels(batch_tokenizer):
               'tokenize_single_data_batch': 0}
     return levels[batch_tokenizer.__name__]
 
+def train_emb_model(model, 
+                    tokenizer,
+                    batch_tokenizer, 
+                    train_data, 
+                    loss_func, 
+                    optimizer, 
+                    epochs, 
+                    save_dir,
+                    tokenizer_max_length = 512):
+    
+    levels = get_cuda_levels(batch_tokenizer)
+    model.cuda()
+    for epoch in range(epochs):
+        wandb.log({"Epoch": epoch}) 
+        model.train()
+        
+        for i, d in enumerate(train_data):
+            batch = batch_tokenizer(d, tokenizer, tokenizer_max_length)
+            inputs, masks = to_cuda(batch, levels=levels)
+            a, p, n = inputs
+            a_mask, p_mask, n_mask = masks
+            optimizer.zero_grad()
+            oa, op, on = model(a, p, n, a_mask, p_mask, n_mask)
+            loss = loss_func(oa, op, on)
+            loss.backward()
+            optimizer.step()
+            
+            if (i % 100) == 0 : 
+                wandb.log({"train batch loss": loss.item()})
+        last_saved = save_torch_model(save_dir, model)
+    return last_saved
 
 def train_model(model, 
                 tokenizer,
@@ -80,4 +111,6 @@ def eval_model(model,
         out = model.return_emb(inputs, masks)
         embeddings.append(out.cpu().detach().numpy())
     embeddings = np.vstack(embeddings)
+    if data.dataset.indexed:
+        return np.array(data.dataset.index), embeddings
     return embeddings

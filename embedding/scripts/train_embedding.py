@@ -21,7 +21,7 @@ from transformers import AutoTokenizer, DistilBertModel
 
 sys.path.append('/lfs/1/sahaana/enrichment/ember/utils')
 from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, EmberEvalDataset
-from embedding_models import TripletSingleBERTModel
+from embedding_models import TripletSingleBERTModel, TripletDoubleBERTModel, PreTrainedBERTModel
 from embedding_utils import param_header, tokenize_batch  
 from embedding_runner import train_emb_model, eval_model
 from knn_utils import FaissKNeighbors, compute_top_k_pd, knn_IMDB_wiki_recall, knn_SQuAD_sent_recall, knn_MARCO_recall, knn_deepmatcher_recall  
@@ -43,7 +43,9 @@ knn_routine = {
               }
 
 model_arch = {
-                'single-triplet': TripletSingleBERTModel 
+                'single-triplet': TripletSingleBERTModel, 
+                'double-triplet': TripletDoubleBERTModel,
+                'pretrained': PreTrainedBERTModel
              }
 
 def train_embedding(config):
@@ -109,8 +111,12 @@ def perform_knn(config, latest_model_path):
                                  batch_size=conf.batch_size,
                                  shuffle = False
                                 )
-    left_index, left_embeddings = eval_model(model, tokenizer, left_eval_data, conf.tokenizer_max_length)
-    right_index, right_embeddings = eval_model(model, tokenizer, right_eval_data, conf.tokenizer_max_length)
+    if conf.arch == 'double-triplet':
+        left_index, left_embeddings = eval_model(model, tokenizer, left_eval_data, conf.tokenizer_max_length, mode='LEFT')
+        right_index, right_embeddings = eval_model(model, tokenizer, right_eval_data, conf.tokenizer_max_length, mode='RIGHT')
+    else:
+        left_index, left_embeddings = eval_model(model, tokenizer, left_eval_data, conf.tokenizer_max_length)
+        right_index, right_embeddings = eval_model(model, tokenizer, right_eval_data, conf.tokenizer_max_length)
     
     knn = FaissKNeighbors(k=conf.knn_k)
     knn.fit(right_embeddings)

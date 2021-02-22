@@ -100,15 +100,22 @@ def train_model(model,
 def eval_model(model, 
                tokenizer,
                data,
-               tokenizer_max_length = 512):
+               tokenizer_max_length = 512, 
+               mode = None): #mode can be right or left too, but make sure to only use it with the double tower models
     embeddings = []
-    
     model.eval()
     model.cuda()
+    
+    if mode == 'LEFT':
+        emb_return = model.return_emb_l
+    elif mode == 'RIGHT':
+        emb_return = model.return_emb_r
+    else:
+        emb_return = model.return_emb
     for i, d in enumerate(data):
         batch = tokenize_single_data_batch(d, tokenizer, tokenizer_max_length)
         inputs, masks = to_cuda(batch, levels=0)
-        out = model.return_emb(inputs, masks)
+        out = emb_return(inputs, masks)
         embeddings.append(out.cpu().detach().numpy())
     embeddings = np.vstack(embeddings)
     if data.dataset.indexed:

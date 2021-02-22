@@ -314,7 +314,34 @@ def bm25_imdb_wiki_recall(bm25: pd.DataFrame,
         MRR_results.append(match/mrr)
     return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results    
     
+def bm25_imdb_fuzzy_recall(bm25: pd.DataFrame,
+                           supervision: pd.DataFrame,
+                           k: int,
+                           thresh = None):
+    supervision = supervision.set_index('FUZZY_ID')
+    neibs = bm25.to_numpy()[:,::-1]
+    neibs = neibs[:, :k]
+    #neibs = right_indexing[neibs[:,:k]]
+    bm25_index = np.array(bm25.index)
 
+    results = []
+    MRR_results = []
+    for idx, row in enumerate(neibs):
+        match = 0
+        mrr = 0
+        
+        qid = bm25_index[idx]
+        true_match = supervision.loc[qid]['tconst']
+        for entry in row: 
+            mrr += 1.
+            if entry == true_match:
+                match = 1
+                break
+        results.append(match)
+        MRR_results.append(match/mrr)
+    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results    
+    
+    
 def knn_matching_accuracy(neib, k, train_idx, test_idx):
     accuracy_mask = create_neib_mask(neib.shape[0], k)
     

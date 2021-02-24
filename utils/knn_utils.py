@@ -37,7 +37,7 @@ def compute_top_k_pd(routine, params, k_max, thresh = None):
     knn_results = pd.DataFrame(knn_results)
     return knn_results
 
-def knn_top_1_PRFS(dists: np.array, 
+"""def knn_top_1_PRFS(dists: np.array, 
                    neibs: np.array, 
                    supervision: pd.DataFrame,
                    left_indexing: np.array,
@@ -56,7 +56,7 @@ def knn_top_1_PRFS(dists: np.array,
             predicted += [1]
         else:
             predicted += [0]
-    return precision_recall_fscore_support(true, predicted, average = 'binary'), predicted
+    return precision_recall_fscore_support(true, predicted, average = 'binary'), predicted"""
 
 
 def knn_deepmatcher_recall(dists: np.array, 
@@ -74,11 +74,11 @@ def knn_deepmatcher_recall(dists: np.array,
     
     top_index = defaultdict(set)
     for i,j in zip(l,r):
-        top_index[i].add(neibs[i,j])
+        top_index[left_indexing[i]].add(neibs[i,j])
     
     predicted = []
     supervision = supervision.to_numpy()
-    true = supervision[:,2]
+    true = supervision[:,2].astype(int)
     for left, right, label in supervision:
         if right in top_index[left]:
             predicted += [1]
@@ -133,6 +133,36 @@ def knn_IMDB_wiki_recall(dists: np.array,
         results.append(match)
         MRR_results.append(match/mrr)
     return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results        
+
+def knn_IMDB_fuzzy_recall(dists: np.array,
+                          neibs: np.array,
+                          supervision: pd.DataFrame,
+                          left_indexing: np.array,
+                          right_indexing: np.array,
+                          k: int = None,
+                          thresh: float = None):
+    supervision = supervision.set_index('FUZZY_ID')
+    mode = "tconst"
+    if k is not None:
+        neibs = right_indexing[neibs[:,:k]]
+    else:
+        pass # TODO
+    results = []
+    MRR_results = []
+    for idx, row in enumerate(neibs):
+        match = 0
+        mrr = 0
+        
+        qid = left_indexing[idx]
+        true_match = supervision.loc[qid][mode]
+        for entry in row: 
+            mrr += 1.
+            if entry == true_match:
+                match = 1
+                break
+        results.append(match)
+        MRR_results.append(match/mrr)
+    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results    
     
     
 def knn_SQuAD_sent_recall(dists: np.array,
@@ -340,7 +370,34 @@ def bm25_imdb_fuzzy_recall(bm25: pd.DataFrame,
         results.append(match)
         MRR_results.append(match/mrr)
     return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results    
+
+def bm25_deepmatcher_recall(bm25: pd.DataFrame, 
+                            supervision: pd.DataFrame,
+                            k: int = None,
+                            thresh: float = None):
+    supervision = supervision.set_index('ltable_id')
+    bm25_index = np.array(bm25.index)
     
+    neibs = bm25.to_numpy()[:,::-1]
+    neibs = neibs[:,:k]
+    if k is not None:
+        l, r = np.where(neibs != None) #dumb hack
+    else:
+        pass
+    
+    top_index = defaultdict(set)
+    for i,j in zip(l,r):
+        top_index[bm25_index[i]].add(neibs[i,j])
+    
+    predicted = []
+    true = []
+    for left, (right, label) in supervision.iterrows():
+        true += [label]
+        if right in top_index[left]:
+            predicted += [1]
+        else:
+            predicted += [0]
+    return *precision_recall_fscore_support(true, predicted, average = 'binary'), predicted
     
 def knn_matching_accuracy(neib, k, train_idx, test_idx):
     accuracy_mask = create_neib_mask(neib.shape[0], k)

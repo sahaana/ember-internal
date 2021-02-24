@@ -20,19 +20,20 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, DistilBertModel
 
 sys.path.append('/lfs/1/sahaana/enrichment/ember/utils')
-from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, EmberEvalDataset
+from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, IMDBFuzzyDataset, EmberEvalDataset
 from embedding_models import TripletSingleBERTModel, TripletDoubleBERTModel, PreTrainedBERTModel
 from embedding_utils import param_header, tokenize_batch  
 from embedding_runner import train_emb_model, eval_model
-from knn_utils import FaissKNeighbors, compute_top_k_pd, knn_IMDB_wiki_recall, knn_SQuAD_sent_recall, knn_MARCO_recall, knn_deepmatcher_recall  
+from knn_utils import FaissKNeighbors, compute_top_k_pd, knn_IMDB_wiki_recall, knn_SQuAD_sent_recall, knn_MARCO_recall, knn_deepmatcher_recall, knn_IMDB_fuzzy_recall  
 from file_utils import load_config
 
 dataset = { 
             'imdb_wiki': IMDBWikiDataset,
             'SQuAD_sent': SQuADDataset,
             'MSMARCO': MARCODataset,
-            'deepmatcher': DeepMatcherDataset
-    
+            'deepmatcher': DeepMatcherDataset,
+            'small_imdb_fuzzy': IMDBFuzzyDataset,
+            'hard_imdb_fuzzy': IMDBFuzzyDataset,
           }
 
 knn_routine = {
@@ -40,6 +41,8 @@ knn_routine = {
                 'SQuAD_sent': knn_SQuAD_sent_recall,
                 'MSMARCO': knn_MARCO_recall,
                 'deepmatcher': knn_deepmatcher_recall,
+                'small_imdb_fuzzy': knn_IMDB_fuzzy_recall,
+                'hard_imdb_fuzzy': knn_IMDB_fuzzy_recall
               }
 
 model_arch = {
@@ -48,9 +51,15 @@ model_arch = {
                 'pretrained': PreTrainedBERTModel
              }
 
+model_train = {
+                'single-triplet': True, 
+                'double-triplet': True,
+                'pretrained': False
+             }
+
 def train_embedding(config):
     conf = SimpleNamespace(**config)
-    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher']:
+    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy']:
         left = pd.read_pickle(conf.datapath_l)
         right = pd.read_pickle(conf.datapath_r)
         train_supervision = pd.read_pickle(conf.train_supervision)
@@ -59,7 +68,7 @@ def train_embedding(config):
         right = right.set_index('PID')
         
     tokenizer = AutoTokenizer.from_pretrained(conf.tokenizer)
-    bert_model = DistilBertModel.from_pretrained(conf.bert_path, return_dict=True)
+    #bert_model = DistilBertModel.from_pretrained(conf.bert_path, return_dict=True)
         
     train_data = DataLoader(dataset[conf.data](left, right, conf.train_size, conf.column, train_supervision), 
                             batch_size=conf.batch_size,
@@ -68,7 +77,7 @@ def train_embedding(config):
     
     if conf.loss == 'triplet':
         loss = nn.TripletMarginLoss(margin=conf.tl_margin, p=conf.tl_p)
-        model = model_arch[conf.arch](conf.final_size, conf.pool_type, conf.bert_path)
+        model = model_arch[conf.arch](final_size = conf.final_size, pooling = conf.pool_type, bert_path = conf.bert_path)
         optimizer = optim.AdamW(model.parameters(), lr=conf.lr)#optim.SGD(model.parameters(), lr=lr)
     
     save_dir = param_header(conf.batch_size, conf.final_size, conf.lr, conf.pool_type, conf.epochs, conf.train_size)
@@ -84,7 +93,8 @@ def train_embedding(config):
                                  optimizer, 
                                  conf.epochs, 
                                  save_dir, 
-                                 conf.tokenizer_max_length)
+                                 conf.tokenizer_max_length,
+                                 model_train[conf.arch])
     
     return last_saved
 
@@ -94,7 +104,7 @@ def perform_knn(config, latest_model_path):
     model = model_arch[conf.arch](conf.final_size, conf.pool_type, conf.bert_path)
     model.load_state_dict(torch.load(latest_model_path))
     
-    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher']:
+    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy']:
         left = pd.read_pickle(conf.eval_datapath_l)
         right = pd.read_pickle(conf.eval_datapath_r)
         test_supervision = pd.read_pickle(conf.test_supervision)

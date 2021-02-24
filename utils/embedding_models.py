@@ -86,12 +86,12 @@ class TripletSingleBERTModel(nn.Module):
     
 class PreTrainedBERTModel(nn.Module):
     def __init__(self, final_size = None, pooling = 'CLS', 
-                 bert_path='distilbert-base-uncased', model_type='distilbert', pool_activation=None): 
+                 bert_path=None, model_type='distilbert', pool_activation=None): 
         super().__init__()
         if model_type == 'distilbert':
-            self.bert = DistilBertModel.from_pretrained('distilbert-base-uncased', return_dict=True)
+            self.bert = DistilBertModel.from_pretrained(bert_path, return_dict=True)
         else:
-            self.bert = BertModel.from_pretrained('bert-base-uncased', return_dict=True)
+            self.bert = BertModel.from_pretrained(bert_path, return_dict=True)
         self.pooler = PreTrainedBertPooler(self.bert.config, pooling)
         
     def forward(self, a, p, n, a_mask, p_mask, n_mask):
@@ -124,8 +124,8 @@ class TripletDoubleBERTModel(nn.Module):
         else:
             self.bert_l = BertModel.from_pretrained(bert_path, return_dict=True)
             self.bert_r = BertModel.from_pretrained(bert_path, return_dict=True)
-        self.pooler_l = BertPooler(self.bert.config, final_size, pooling, pool_activation)
-        self.pooler_r = BertPooler(self.bert.config, final_size, pooling, pool_activation)
+        self.pooler_l = BertPooler(self.bert_l.config, final_size, pooling, pool_activation)
+        self.pooler_r = BertPooler(self.bert_r.config, final_size, pooling, pool_activation)
 
     def forward(self, a, p, n, a_mask, p_mask, n_mask):
         output_a = self.bert_l(a, attention_mask=a_mask).last_hidden_state

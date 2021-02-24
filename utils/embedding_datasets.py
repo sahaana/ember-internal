@@ -101,7 +101,25 @@ class IMDBWikiDataset(EmberTripletDataset):
         while len(triples) < self.n_samples:
             for _, record in supervision.iterrows():
                 random_negative = np.random.choice(self.df_r.index)
+                if record[q_col] != random_negative:
+                    triples.add((record[a_col], record[q_col], random_negative))
                 triples.add((record[a_col], record[q_col], random_negative))
+                if len(triples) >= self.n_samples:
+                    return list(triples)
+        return list(triples)
+    
+class IMDBFuzzyDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "FUZZY_ID"
+        q_col = "tconst"
+        
+        while len(triples) < self.n_samples:
+            for _, record in supervision.iterrows():
+                random_negative = np.random.choice(self.df_r.index)
+                if record[q_col] != random_negative:
+                    triples.add((record[a_col], record[q_col], random_negative))
                 if len(triples) >= self.n_samples:
                     return list(triples)
         return list(triples)

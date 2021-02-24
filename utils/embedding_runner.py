@@ -42,7 +42,7 @@ def train_emb_model(model,
 
                 if (i % 100) == 0 : 
                     wandb.log({"train batch loss": loss.item()})
-                if (i % 2000 == 0):
+                if (i % 20000 == 0):
                     save_torch_model(save_dir, model)
         last_saved = save_torch_model(save_dir, model)
     return last_saved

@@ -24,7 +24,7 @@ def time_all(iters=25):
     timings = defaultdict(list)
     for i in get_alpha_sorted_files(config_base):
         #if 'deepmatcher' in i:# or 'imdb' in i and 'OLD' not in i:
-        if 'json' not in i or "MARCO" in i or "company" in i or 'deepmatcher' in i or 'OLD' in i: 
+        if 'json' not in i or "MARCO" in i or "company" in i or 'deepmatcher' in i or 'OLD' in i or 'small_imdb' in i: 
             continue
         conf = load_config(i)
         config_knn = get_config_knn_dir(i)

@@ -59,7 +59,7 @@ model_train = {
 
 def train_embedding(config):
     conf = SimpleNamespace(**config)
-    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy']:
+    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy', 'hard_imdb_fuzzy']:
         left = pd.read_pickle(conf.datapath_l)
         right = pd.read_pickle(conf.datapath_r)
         train_supervision = pd.read_pickle(conf.train_supervision)
@@ -104,7 +104,7 @@ def perform_knn(config, latest_model_path):
     model = model_arch[conf.arch](conf.final_size, conf.pool_type, conf.bert_path)
     model.load_state_dict(torch.load(latest_model_path))
     
-    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy']:
+    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy', 'hard_imdb_fuzzy']:
         left = pd.read_pickle(conf.eval_datapath_l)
         right = pd.read_pickle(conf.eval_datapath_r)
         test_supervision = pd.read_pickle(conf.test_supervision)

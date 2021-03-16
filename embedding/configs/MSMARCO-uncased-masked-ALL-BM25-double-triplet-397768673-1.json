@@ -5,7 +5,7 @@
     "train_supervision": "/lfs/1/sahaana/enrichment/data/MSMARCO/qidpidtriples.train.full.2.pkl",
     "eval_datapath_l": "/lfs/1/sahaana/enrichment/data/MSMARCO/dev_tableA_processed.pkl",
     "eval_datapath_r": "/lfs/1/sahaana/enrichment/data/MSMARCO/tableB_processed.pkl",
-    "test_supervision": "/lfs/1/sahaana/enrichment/data/MSMARCO/qrels.dev.small.pkl",
+    "test_supervision": "/lfs/1/sahaana/enrichment/data/MSMARCO/supervision_test.pkl",
     "arch": "double-triplet",
     "bert_path": "/lfs/1/sahaana/enrichment//ember/pretraining/models/MARCO-uncased-masked-ALL-BM25",
     "column": "merged_all",

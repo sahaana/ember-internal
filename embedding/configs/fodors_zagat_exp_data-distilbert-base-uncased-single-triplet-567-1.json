@@ -20,6 +20,6 @@
     "tl_p": 2,
     "pool_type": "CLS",
     "tokenizer_max_length": 512,
-    "knn_k": 30,
+    "knn_k": 300,
     "model_name": "fodors_zagat_exp_data-distilbert-base-uncased-single-triplet-567-1"
 }

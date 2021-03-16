@@ -20,6 +20,6 @@
     "tl_p": 2,
     "pool_type": "CLS",
     "tokenizer_max_length": 512,
-    "knn_k": 30,
+    "knn_k": 300,
     "model_name": "dblp_scholar_exp_data-uncased-masked-ALL-BM25-double-triplet-17223-1"
 }

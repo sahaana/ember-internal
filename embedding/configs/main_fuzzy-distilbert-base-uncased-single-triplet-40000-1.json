@@ -20,6 +20,6 @@
     "tl_p": 2,
     "pool_type": "CLS",
     "tokenizer_max_length": 512,
-    "knn_k": 30,
+    "knn_k": 300,
     "model_name": "main_fuzzy-distilbert-base-uncased-single-triplet-40000-1"
 }

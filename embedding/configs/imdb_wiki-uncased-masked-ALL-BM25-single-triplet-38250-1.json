@@ -6,11 +6,11 @@
     "eval_datapath_l": "/lfs/1/sahaana/enrichment/data/imdb_wiki/dev_tableA_processed.pkl",
     "eval_datapath_r": "/lfs/1/sahaana/enrichment/data/imdb_wiki/dev_tableB_processed.pkl",
     "test_supervision": "/lfs/1/sahaana/enrichment//data/imdb_wiki/supervision_test.pkl",
-    "train_size": 38250,
     "arch": "single-triplet",
     "bert_path": "/lfs/1/sahaana/enrichment//ember/pretraining/models/imdb_wiki-uncased-masked-ALL-BM25",
     "column": "merged_all",
     "tokenizer": "distilbert-base-uncased",
+    "train_size": 38250,
     "epochs": 1,
     "batch_size": 8,
     "final_size": 200,
@@ -20,6 +20,6 @@
     "tl_p": 2,
     "pool_type": "CLS",
     "tokenizer_max_length": 512,
-    "knn_k": 30,
+    "knn_k": 300,
     "model_name": "imdb_wiki-uncased-masked-ALL-BM25-single-triplet-38250-1"
 }

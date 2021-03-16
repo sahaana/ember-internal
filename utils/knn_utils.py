@@ -196,6 +196,74 @@ def knn_SQuAD_sent_recall(dists: np.array,
         MRR_results.append(match/mrr)
     return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results    
 
+
+def knn_BM_blocked_recall_old(dists: np.array,
+                              neibs: np.array,
+                              supervision: pd.DataFrame,
+                              left_indexing: np.array,
+                              right_indexing: np.array,
+                              k: int = None,
+                              thresh: float = None):
+    supervision = supervision.set_index('ltable_id')
+    mode = "rtable_id"
+    if k is not None:
+        neibs = right_indexing[neibs[:,:k]]
+    else:
+        pass # TODO
+    results = []
+    MRR_results = []
+    for idx, row in enumerate(neibs):
+        match = 0
+        mrr = 0
+        
+        qid = left_indexing[idx]
+        true_matches = supervision.loc[qid][mode]
+        true_matches = set(true_matches)
+        for entry in row: 
+            mrr += 1.
+            if entry in true_matches:
+                match = 1
+                break
+        results.append(match)
+        MRR_results.append(match/mrr)
+    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results  
+
+
+def knn_BM_blocked_recall(dists: np.array,
+                          neibs: np.array,
+                          supervision: pd.DataFrame,
+                          left_indexing: np.array,
+                          right_indexing: np.array,
+                          k: int = None,
+                          thresh: float = None):
+    supervision = supervision.set_index('ltable_id')
+    mode = "rtable_id"
+    if k is not None:
+        neibs = right_indexing[neibs[:,:k]]
+    else:
+        pass # TODO
+    results = []
+    MRR_results = []
+    
+    for idx, row in enumerate(neibs):
+        match = 0
+        mrr = 0
+        
+        qid = left_indexing[idx]
+        
+        if qid in supervision.index:
+            true_matches = supervision.loc[qid][mode]
+            true_matches = set(true_matches)
+            for entry in row: 
+                mrr += 1.
+                if entry in true_matches:
+                    match = 1
+                    break
+            results.append(match)
+            MRR_results.append(match/mrr)
+    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results  
+
+
 """def knn_SQuAD_recall(dists: np.array,
                      neibs: np.array,
                      supervision: pd.DataFrame,
@@ -398,7 +466,64 @@ def bm25_deepmatcher_recall(bm25: pd.DataFrame,
         else:
             predicted += [0]
     return *precision_recall_fscore_support(true, predicted, average = 'binary'), predicted
-    
+  
+def bm25_DM_blocked_recall(bm25: pd.DataFrame,
+                           supervision: pd.DataFrame,
+                           k: int,
+                           thresh = None):
+    supervision = supervision.set_index('ltable_id')
+    mode = "rtable_id"
+    neibs = bm25.to_numpy()[:,::-1]
+    neibs = neibs[:, :k]
+    bm25_index = np.array(bm25.index)
+
+    results = []
+    MRR_results = []
+    for idx, row in enumerate(neibs):
+        match = 0
+        mrr = 0
+        
+        qid = bm25_index[idx]
+        true_matches = supervision.loc[qid][mode]
+        true_matches = set(true_matches)
+        for entry in row: 
+            mrr += 1.
+            if entry in true_matches:
+                match = 1
+                break
+        results.append(match)
+        MRR_results.append(match/mrr)
+    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results
+
+def bm25_DM_joined_recall(bm25: pd.DataFrame,
+                          supervision: pd.DataFrame,
+                          k: int,
+                          thresh = None):
+    supervision = supervision.set_index('ltable_id')
+    mode = "rtable_id"
+    neibs = bm25.to_numpy()[:,::-1]
+    neibs = neibs[:, :k]
+    bm25_index = np.array(bm25.index)
+
+    results = []
+    MRR_results = []
+    for idx, row in enumerate(neibs):
+        match = 0
+        mrr = 0
+        
+        qid = bm25_index[idx]
+        if qid in supervision.index:
+            true_matches = supervision.loc[qid][mode]
+            true_matches = set(true_matches)
+            for entry in row: 
+                mrr += 1.
+                if entry in true_matches:
+                    match = 1
+                    break
+            results.append(match)
+            MRR_results.append(match/mrr)
+    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results
+
 def knn_matching_accuracy(neib, k, train_idx, test_idx):
     accuracy_mask = create_neib_mask(neib.shape[0], k)
     

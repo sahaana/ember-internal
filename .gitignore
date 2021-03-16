@@ -1,2 +1,8 @@
 *.pyc
 *-checkpoint.ipynb
+*.bin
+*.wandb
+*.log
+*.yaml
+*.pt
+*requirements.txt

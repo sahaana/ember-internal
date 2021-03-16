@@ -1,0 +1,17 @@
+{
+    "datapath_l": "/lfs/1/sahaana/enrichment/data/dm_blocked/joined_company_exp_data/tableA_processed.pkl",
+    "datapath_r": "/lfs/1/sahaana/enrichment/data/dm_blocked/joined_company_exp_data/tableB_processed.pkl",
+    "bm25_argsort_path": "/lfs/1/sahaana/enrichment/data/Okapi25Queries/joined_company_exp_data_argsort_indices.pkl",
+    "model_type": "distilbert",
+    "tokenizer_casing": "uncased",
+    "from_scratch": false,
+    "mlm_probability": 0.15,
+    "mlm_num_seps": null,
+    "mlm_masking": "ALL",
+    "num_train": 28200,
+    "num_test": 0,
+    "data_column": "merged_all",
+    "model_name": "joined_company_exp_data-uncased-masked-ALL-BM25",
+    "train_epochs": 20,
+    "batch_size": 8
+}

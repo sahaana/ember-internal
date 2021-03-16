@@ -124,6 +124,22 @@ class IMDBFuzzyDataset(EmberTripletDataset):
                     return list(triples)
         return list(triples)
     
+class DMBlockedDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "ltable_id"
+        q_col = "rtable_id"
+        
+        while len(triples) < self.n_samples:
+            for _, record in supervision.iterrows():
+                random_negative = np.random.choice(self.df_r.index)
+                if random_negative not in record[q_col]:
+                    triples.add((record[a_col], np.random.choice(record[q_col]), random_negative))
+                if len(triples) >= self.n_samples:
+                    return list(triples)
+        return list(triples)
+    
 class DeepMatcherDataset(EmberTripletDataset):
     def gen_triplets(self, 
                      supervision: pd.DataFrame):

@@ -20,11 +20,11 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, DistilBertModel
 
 sys.path.append('/lfs/1/sahaana/enrichment/ember/utils')
-from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, IMDBFuzzyDataset, EmberEvalDataset
+from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, IMDBFuzzyDataset, EmberEvalDataset, DMBlockedDataset
 from embedding_models import TripletSingleBERTModel, TripletDoubleBERTModel, PreTrainedBERTModel
 from embedding_utils import param_header, tokenize_batch  
 from embedding_runner import train_emb_model, eval_model
-from knn_utils import FaissKNeighbors, compute_top_k_pd, knn_IMDB_wiki_recall, knn_SQuAD_sent_recall, knn_MARCO_recall, knn_deepmatcher_recall, knn_IMDB_fuzzy_recall  
+from knn_utils import FaissKNeighbors, compute_top_k_pd, knn_IMDB_wiki_recall, knn_SQuAD_sent_recall, knn_MARCO_recall, knn_deepmatcher_recall, knn_IMDB_fuzzy_recall, knn_BM_blocked_recall  
 from file_utils import load_config
 
 dataset = { 
@@ -34,6 +34,10 @@ dataset = {
             'deepmatcher': DeepMatcherDataset,
             'small_imdb_fuzzy': IMDBFuzzyDataset,
             'hard_imdb_fuzzy': IMDBFuzzyDataset,
+            'main_fuzzy': IMDBFuzzyDataset,
+            'hard_fuzzy': IMDBFuzzyDataset,
+            'easy_fuzzy': IMDBFuzzyDataset,
+            'dm_blocked': DMBlockedDataset,
           }
 
 knn_routine = {
@@ -42,7 +46,11 @@ knn_routine = {
                 'MSMARCO': knn_MARCO_recall,
                 'deepmatcher': knn_deepmatcher_recall,
                 'small_imdb_fuzzy': knn_IMDB_fuzzy_recall,
-                'hard_imdb_fuzzy': knn_IMDB_fuzzy_recall
+                'hard_imdb_fuzzy': knn_IMDB_fuzzy_recall,
+                'main_fuzzy': knn_IMDB_fuzzy_recall,
+                'hard_fuzzy': knn_IMDB_fuzzy_recall,
+                'easy_fuzzy': knn_IMDB_fuzzy_recall,
+                'dm_blocked': knn_BM_blocked_recall,
               }
 
 model_arch = {
@@ -59,7 +67,8 @@ model_train = {
 
 def train_embedding(config):
     conf = SimpleNamespace(**config)
-    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy', 'hard_imdb_fuzzy']:
+    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy', 'hard_imdb_fuzzy',
+                     'main_fuzzy', 'hard_fuzzy', 'easy_fuzzy', 'dm_blocked']:
         left = pd.read_pickle(conf.datapath_l)
         right = pd.read_pickle(conf.datapath_r)
         train_supervision = pd.read_pickle(conf.train_supervision)
@@ -104,7 +113,8 @@ def perform_knn(config, latest_model_path):
     model = model_arch[conf.arch](conf.final_size, conf.pool_type, conf.bert_path)
     model.load_state_dict(torch.load(latest_model_path))
     
-    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy', 'hard_imdb_fuzzy']:
+    if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy', 'hard_imdb_fuzzy',
+                     'main_fuzzy', 'hard_fuzzy', 'easy_fuzzy', 'dm_blocked']:
         left = pd.read_pickle(conf.eval_datapath_l)
         right = pd.read_pickle(conf.eval_datapath_r)
         test_supervision = pd.read_pickle(conf.test_supervision)

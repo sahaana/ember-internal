@@ -24,7 +24,7 @@ from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, Deep
 from embedding_models import TripletSingleBERTModel, TripletDoubleBERTModel, PreTrainedBERTModel
 from embedding_utils import param_header, tokenize_batch  
 from embedding_runner import train_emb_model, eval_model
-from knn_utils import FaissKNeighbors, compute_top_k_pd, knn_IMDB_wiki_recall, knn_SQuAD_sent_recall, knn_MARCO_recall, knn_deepmatcher_recall, knn_IMDB_fuzzy_recall, knn_BM_blocked_recall  
+from knn_utils import FaissKNeighbors, compute_top_k_pd, knn_IMDB_wiki_recall, knn_SQuAD_sent_recall, knn_MARCO_recall, knn_deepmatcher_recall, knn_IMDB_fuzzy_recall, knn_DM_blocked_recall  
 from file_utils import load_config
 
 dataset = { 
@@ -41,16 +41,16 @@ dataset = {
           }
 
 knn_routine = {
-                'imdb_wiki': knn_IMDB_wiki_recall, 
-                'SQuAD_sent': knn_SQuAD_sent_recall,
-                'MSMARCO': knn_MARCO_recall,
+                'imdb_wiki': knn_IMDB_wiki_recall,  #
+                'SQuAD_sent': knn_SQuAD_sent_recall, #
+                'MSMARCO': knn_MARCO_recall, #
                 'deepmatcher': knn_deepmatcher_recall,
-                'small_imdb_fuzzy': knn_IMDB_fuzzy_recall,
-                'hard_imdb_fuzzy': knn_IMDB_fuzzy_recall,
-                'main_fuzzy': knn_IMDB_fuzzy_recall,
-                'hard_fuzzy': knn_IMDB_fuzzy_recall,
-                'easy_fuzzy': knn_IMDB_fuzzy_recall,
-                'dm_blocked': knn_BM_blocked_recall,
+                'small_imdb_fuzzy': knn_IMDB_fuzzy_recall, #
+                'hard_imdb_fuzzy': knn_IMDB_fuzzy_recall, #
+                'main_fuzzy': knn_IMDB_fuzzy_recall, #
+                'hard_fuzzy': knn_IMDB_fuzzy_recall, #
+                'easy_fuzzy': knn_IMDB_fuzzy_recall, #
+                'dm_blocked': knn_DM_blocked_recall, #
               }
 
 model_arch = {

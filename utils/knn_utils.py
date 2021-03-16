@@ -22,17 +22,19 @@ class FaissKNeighbors:
 def create_neib_mask(num_data, num_neib):
     return np.reshape([range(num_data)]*num_neib, (num_neib, num_data)).T
 
-
 def compute_top_k_pd(routine, params, k_max, thresh = None):
     knn_results = defaultdict(list)
     for k in range(1, k_max+1):
-        avg, count, MRR, results, MRR_results = routine(*params, k=k, thresh=thresh)
-        print(f"k: {k} \t avg: {avg} \t count: {count} \t MRR: {MRR}")
+        ret_avg, ret_count, all_avg, all_count, MRR, results, all_results, MRR_results = routine(*params, k=k, thresh=thresh)
+        print(f"k: {k} \t ret avg: {ret_avg} \t ret_count: {ret_count} \t ret avg: {all_avg} \t ret_count: {all_count} \t MRR: {MRR}")
         knn_results['k'].append(k)
-        knn_results['avg'].append(avg)
-        knn_results['count'].append(count)
+        knn_results['ret_avg'].append(ret_avg)
+        knn_results['ret_count'].append(ret_count)
+        knn_results['all_avg'].append(all_avg)
+        knn_results['all_count'].append(all_count)
         knn_results['MRR'].append(MRR)
         knn_results['results'].append(results)
+        knn_results['all_results'].append(all_results)
         knn_results['MRR_results'].append(MRR_results)
     knn_results = pd.DataFrame(knn_results)
     return knn_results
@@ -117,22 +119,36 @@ def knn_IMDB_wiki_recall(dists: np.array,
         neibs = right_indexing[neibs[:,:k]]
     else:
         pass # TODO
+    
     results = []
     MRR_results = []
+    all_captured = []
+    
     for idx, row in enumerate(neibs):
-        match = 0
-        mrr = 0
+        matches = 0
+        mrr_count = 0
+        first_relevant = np.inf
         
         qid = left_indexing[idx]
-        true_match = supervision.loc[qid][mode]
-        for entry in row: 
-            mrr += 1.
-            if entry == true_match:
-                match = 1
-                break
-        results.append(match)
-        MRR_results.append(match/mrr)
-    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results        
+        
+        if qid in supervision.index:       
+            true_matches = supervision.loc[qid][mode]
+            true_matches = set(true_matches)
+            for entry in row: 
+                mrr_count += 1.
+                if entry in true_matches:
+                    first_relevant = min(mrr_count, first_relevant)
+                    matches += 1
+                    
+            all_matches = 1 if len(true_matches) == matches else 0
+            one_match = 1 if matches > 0 else 0  
+            
+            results.append(one_match)
+            all_captured.append(all_matches)
+            MRR_results.append(1./first_relevant)
+    return np.mean(results), np.sum(results), np.mean(all_captured), np.sum(all_captured), \
+           np.mean(MRR_results), results, all_captured, MRR_results  
+
 
 def knn_IMDB_fuzzy_recall(dists: np.array,
                           neibs: np.array,
@@ -147,25 +163,38 @@ def knn_IMDB_fuzzy_recall(dists: np.array,
         neibs = right_indexing[neibs[:,:k]]
     else:
         pass # TODO
+    
     results = []
     MRR_results = []
+    all_captured = []
+    
     for idx, row in enumerate(neibs):
-        match = 0
-        mrr = 0
+        matches = 0
+        mrr_count = 0
+        first_relevant = np.inf
         
         qid = left_indexing[idx]
-        true_match = supervision.loc[qid][mode]
-        for entry in row: 
-            mrr += 1.
-            if entry == true_match:
-                match = 1
-                break
-        results.append(match)
-        MRR_results.append(match/mrr)
-    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results    
+        
+        if qid in supervision.index:       
+            true_matches = supervision.loc[qid][mode]
+            true_matches = set(true_matches)
+            for entry in row: 
+                mrr_count += 1.
+                if entry in true_matches:
+                    first_relevant = min(mrr_count, first_relevant)
+                    matches += 1
+                    
+            all_matches = 1 if len(true_matches) == matches else 0
+            one_match = 1 if matches > 0 else 0  
+            
+            results.append(one_match)
+            all_captured.append(all_matches)
+            MRR_results.append(1./first_relevant)
+    return np.mean(results), np.sum(results), np.mean(all_captured), np.sum(all_captured), \
+           np.mean(MRR_results), results, all_captured, MRR_results  
     
     
-def knn_SQuAD_sent_recall(dists: np.array,
+def knn_SQuAD_sent_recall_old(dists: np.array,
                           neibs: np.array,
                           supervision: pd.DataFrame,
                           left_indexing: np.array,
@@ -195,6 +224,48 @@ def knn_SQuAD_sent_recall(dists: np.array,
         results.append(match)
         MRR_results.append(match/mrr)
     return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results    
+
+def knn_SQuAD_sent_recall(dists: np.array,
+                          neibs: np.array,
+                          supervision: pd.DataFrame,
+                          left_indexing: np.array,
+                          right_indexing: np.array,
+                          k: int = None,
+                          thresh: float = None):
+    supervision = supervision.set_index('QID')
+    mode = "SID"
+    if k is not None:
+        neibs = right_indexing[neibs[:,:k]]
+    else:
+        pass # TODO
+    results = []
+    MRR_results = []
+    all_captured = []
+    
+    for idx, row in enumerate(neibs):
+        matches = 0
+        mrr_count = 0
+        first_relevant = np.inf
+        
+        qid = left_indexing[idx]
+        
+        if qid in supervision.index:       
+            true_matches = supervision.loc[qid][mode]
+            true_matches = set(true_matches)
+            for entry in row: 
+                mrr_count += 1.
+                if entry in true_matches:
+                    first_relevant = min(mrr_count, first_relevant)
+                    matches += 1
+                    
+            all_matches = 1 if len(true_matches) == matches else 0
+            one_match = 1 if matches > 0 else 0  
+            
+            results.append(one_match)
+            all_captured.append(all_matches)
+            MRR_results.append(1./first_relevant)
+    return np.mean(results), np.sum(results), np.mean(all_captured), np.sum(all_captured), \
+           np.mean(MRR_results), results, all_captured, MRR_results  
 
 
 def knn_BM_blocked_recall_old(dists: np.array,
@@ -228,7 +299,7 @@ def knn_BM_blocked_recall_old(dists: np.array,
         MRR_results.append(match/mrr)
     return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results  
 
-
+#old thing before changing metric
 def knn_BM_blocked_recall(dists: np.array,
                           neibs: np.array,
                           supervision: pd.DataFrame,
@@ -262,6 +333,48 @@ def knn_BM_blocked_recall(dists: np.array,
             results.append(match)
             MRR_results.append(match/mrr)
     return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results  
+
+def knn_DM_blocked_recall(dists: np.array,
+                          neibs: np.array,
+                          supervision: pd.DataFrame,
+                          left_indexing: np.array,
+                          right_indexing: np.array,
+                          k: int = None,
+                          thresh: float = None):
+    supervision = supervision.set_index('ltable_id')
+    mode = "rtable_id"
+    if k is not None:
+        neibs = right_indexing[neibs[:,:k]]
+    else:
+        pass # TODO
+    results = []
+    MRR_results = []
+    all_captured = []
+    
+    for idx, row in enumerate(neibs):
+        matches = 0
+        mrr_count = 0
+        first_relevant = np.inf
+        
+        qid = left_indexing[idx]
+        
+        if qid in supervision.index:
+            true_matches = supervision.loc[qid][mode]
+            true_matches = set(true_matches)
+            for entry in row: 
+                mrr_count += 1.
+                if entry in true_matches:
+                    first_relevant = min(mrr_count, first_relevant)
+                    matches += 1
+                    
+            all_matches = 1 if len(true_matches) == matches else 0
+            one_match = 1 if matches > 0 else 0
+            
+            results.append(one_match)
+            all_captured.append(all_matches)
+            MRR_results.append(1./first_relevant)
+    return np.mean(results), np.sum(results), np.mean(all_captured), np.sum(all_captured), \
+           np.mean(MRR_results), results, all_captured, MRR_results  
 
 
 """def knn_SQuAD_recall(dists: np.array,
@@ -308,24 +421,35 @@ def knn_MARCO_recall(dists: np.array,
         neibs = right_indexing[neibs[:,:k]]
     else:
         pass # TODO
+    
     results = []
     MRR_results = []
+    all_captured = []
+    
     for idx, row in enumerate(neibs):
-        match = 0
-        mrr = 0
-
+        matches = 0
+        mrr_count = 0
+        first_relevant = np.inf
+        
         qid = left_indexing[idx]
-        true_match = supervision.loc[qid][mode]
-        true_match = set(true_match) if type(true_match) != np.int64 else true_match
-
-        for entry in row: 
-            mrr += 1.
-            if entry == true_match:
-                match = 1
-                break
-        results.append(match)
-        MRR_results.append(match/mrr)
-    return np.mean(results), np.sum(results), np.mean(MRR_results), results, MRR_results    
+        
+        if qid in supervision.index:       
+            true_matches = supervision.loc[qid][mode]
+            true_matches = set(true_matches)
+            for entry in row: 
+                mrr_count += 1.
+                if entry in true_matches:
+                    first_relevant = min(mrr_count, first_relevant)
+                    matches += 1
+                    
+            all_matches = 1 if len(true_matches) == matches else 0
+            one_match = 1 if matches > 0 else 0  
+            
+            results.append(one_match)
+            all_captured.append(all_matches)
+            MRR_results.append(1./first_relevant)
+    return np.mean(results), np.sum(results), np.mean(all_captured), np.sum(all_captured), \
+           np.mean(MRR_results), results, all_captured, MRR_results    
 
 
 def bm25_SQuAD_sent_recall(bm25: pd.DataFrame,

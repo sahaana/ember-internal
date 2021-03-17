@@ -33,11 +33,27 @@ def compute_top_k_pd(routine, params, k_max, thresh = None):
         knn_results['all_avg'].append(all_avg)
         knn_results['all_count'].append(all_count)
         knn_results['MRR'].append(MRR)
-        knn_results['results'].append(results)
-        knn_results['all_results'].append(all_results)
-        knn_results['MRR_results'].append(MRR_results)
+
     knn_results = pd.DataFrame(knn_results)
     return knn_results
+
+
+def process_results(results: List[pd.DataFrame]) -> Tuple[int, pd.DataFrame]:
+    combined = pd.concat(results, axis=1)
+    averaged = pd.DataFrame({'k' : combined['k'].mean(axis=1), 
+                             'ret_avg': combined['ret_avg'].mean(axis=1), 
+                             'all_avg': combined['all_avg'].mean(axis=1),
+                             'MRR_avg': combined['MRR'].mean(axis=1),
+                             'ret_count': combined['ret_count'].mean(axis=1),
+                             'all_count': combined['all_count'].mean(axis=1),
+                            }).set_index('k')
+    return len(results), averaged
+
+def return_metrics(res: pd.DataFrame, k_list: List[int], thresh_list: List[float]):
+    k_values = res.loc[k_list].copy()
+    thresh_values = pd.DataFrame({'thresh': thresh_list, 
+                                  "k": [res[res['ret_avg'] >= i].index[0] if len(res[res['ret_avg'] >= i]) > 0 else 300 for i in thresh_list]}).set_index('thresh')
+    return k_values, thresh_values
 
 """def knn_top_1_PRFS(dists: np.array, 
                    neibs: np.array, 

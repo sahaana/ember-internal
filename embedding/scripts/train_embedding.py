@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, DistilBertModel
 
 sys.path.append('/lfs/1/sahaana/enrichment/ember/utils')
-from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, IMDBFuzzyDataset, EmberEvalDataset, DMBlockedDataset
+from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, IMDBFuzzyDataset, EmberEvalDataset, DMBlockedDataset, DMHardNegativeBlockedDataset, IMDBWikiHardNegativeDataset, IMDBFuzzyHardNegativeDataset, SQuADRandomDataset
 from embedding_models import TripletSingleBERTModel, TripletDoubleBERTModel, PreTrainedBERTModel
 from embedding_utils import param_header, tokenize_batch  
 from embedding_runner import train_emb_model, eval_model
@@ -37,8 +37,23 @@ dataset = {
             'main_fuzzy': IMDBFuzzyDataset,
             'hard_fuzzy': IMDBFuzzyDataset,
             'easy_fuzzy': IMDBFuzzyDataset,
-            'dm_blocked': DMBlockedDataset,
+            'dm_blocked': DMBlockedDataset
           }
+
+HNdataset = { 
+                'imdb_wiki': IMDBWikiHardNegativeDataset,
+                #'MSMARCO': MARCODataset,
+                #'deepmatcher': DeepMatcherDataset,
+                #'small_imdb_fuzzy': IMDBFuzzyDataset,
+                #'hard_imdb_fuzzy': IMDBFuzzyDataset,
+                'main_fuzzy': IMDBFuzzyHardNegativeDataset,
+                'hard_fuzzy': IMDBFuzzyHardNegativeDataset,
+                'easy_fuzzy': IMDBFuzzyHardNegativeDataset,
+                'dm_blocked': DMHardNegativeBlockedDataset
+             }
+
+randDataset = {'SQuAD_sent': SQuADRandomDataset}
+
 
 knn_routine = {
                 'imdb_wiki': knn_IMDB_wiki_recall,  #
@@ -78,11 +93,23 @@ def train_embedding(config):
         
     tokenizer = AutoTokenizer.from_pretrained(conf.tokenizer)
     #bert_model = DistilBertModel.from_pretrained(conf.bert_path, return_dict=True)
-        
-    train_data = DataLoader(dataset[conf.data](left, right, conf.train_size, conf.column, train_supervision), 
+         
+    if 'negatives' in conf.model_name:
+        train_data =  DataLoader(HNdataset[conf.data](left, right, conf.train_size, conf.column, train_supervision, params = {'negatives':conf.negatives}), 
                             batch_size=conf.batch_size,
                             shuffle = True
-                            )
+                            )  
+
+    elif 'random' in conf.model_name:
+        train_data =  DataLoader(randDataset[conf.data](left, right, conf.train_size, conf.column, train_supervision), 
+                            batch_size=conf.batch_size,
+                            shuffle = True
+                            )    
+    else: 
+        train_data = DataLoader(dataset[conf.data](left, right, conf.train_size, conf.column, train_supervision), 
+                                batch_size=conf.batch_size,
+                                shuffle = True
+                                )
     
     if conf.loss == 'triplet':
         loss = nn.TripletMarginLoss(margin=conf.tl_margin, p=conf.tl_p)

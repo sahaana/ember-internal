@@ -32,10 +32,12 @@ class EmberTripletDataset(torch.utils.data.Dataset):
                  df_r: pd.DataFrame,
                  n_samples: int,
                  data_col: str = 'merged_all', 
-                 supervision: pd.DataFrame = None):
+                 supervision: pd.DataFrame = None,
+                 params = None): #meant to pass in misc domain specific params
         self.df_l = df_l.copy()[data_col]
         self.df_r = df_r.copy()[data_col]
         self.n_samples = n_samples
+        self.params = params
         self.triplets = self.gen_triplets(supervision)
     
     def gen_triplets(self, 
@@ -90,6 +92,22 @@ class SQuADDataset(EmberTripletDataset):
         triplets = supervision.to_numpy(dtype='object')
         #samples = np.random.choice(np.arange(len(triplets)), size=self.n_samples, replace=False)
         return triplets[:self.n_samples] 
+    
+class SQuADRandomDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "QID_a"
+        q_col = "SID_p"
+        
+        while len(triples) < self.n_samples:
+            for _, record in supervision.iterrows():
+                random_negative = np.random.choice(self.df_r.index)
+                if random_negative not in record[q_col]:
+                    triples.add((record[a_col], np.random.choice(record[q_col]), random_negative))
+                if len(triples) >= self.n_samples:
+                    return list(triples)
+        return list(triples)
 
 class IMDBWikiDataset(EmberTripletDataset):
     def gen_triplets(self, 
@@ -104,6 +122,24 @@ class IMDBWikiDataset(EmberTripletDataset):
                 if record[q_col] != random_negative:
                     triples.add((record[a_col], record[q_col], random_negative))
                 triples.add((record[a_col], record[q_col], random_negative))
+                if len(triples) >= self.n_samples:
+                    return list(triples)
+        return list(triples)
+    
+class IMDBWikiHardNegativeDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "IMDB_ID"
+        q_col = "QID"
+        negatives = pd.read_pickle(self.params['negatives'])
+        
+        while len(triples) < self.n_samples:
+            for idx, record in supervision.iterrows():
+                negative_list = negatives.loc[idx][q_col]
+                sampled_negative = np.random.choice(negative_list)
+                if sampled_negative != record[q_col]:
+                    triples.add((record[a_col], record[q_col], sampled_negative))
                 if len(triples) >= self.n_samples:
                     return list(triples)
         return list(triples)
@@ -124,6 +160,24 @@ class IMDBFuzzyDataset(EmberTripletDataset):
                     return list(triples)
         return list(triples)
     
+class IMDBFuzzyHardNegativeDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "FUZZY_ID"
+        q_col = "tconst"
+        negatives = pd.read_pickle(self.params['negatives'])
+        
+        while len(triples) < self.n_samples:
+            for idx, record in supervision.iterrows():
+                negative_list = negatives.loc[idx][q_col]
+                sampled_negative = np.random.choice(negative_list)
+                if sampled_negative != record[q_col]:
+                    triples.add((record[a_col], record[q_col], sampled_negative))
+                if len(triples) >= self.n_samples:
+                    return list(triples)
+        return list(triples)
+    
 class DMBlockedDataset(EmberTripletDataset):
     def gen_triplets(self, 
                      supervision: pd.DataFrame):
@@ -136,6 +190,28 @@ class DMBlockedDataset(EmberTripletDataset):
                 random_negative = np.random.choice(self.df_r.index)
                 if random_negative not in record[q_col]:
                     triples.add((record[a_col], np.random.choice(record[q_col]), random_negative))
+                if len(triples) >= self.n_samples:
+                    return list(triples)
+        return list(triples)
+
+class DMHardNegativeBlockedDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "ltable_id"
+        q_col = "rtable_id"
+        negatives = pd.read_pickle(self.params['negatives'])
+        
+        while len(triples) < self.n_samples:
+            for idx, record in supervision.iterrows():
+                negative_list = negatives.loc[idx][q_col]
+                #print(len(triples))
+                sampled_negative = np.random.choice(negative_list)
+                negatives.loc[idx][q_col].remove(sampled_negative)
+                #print(len(negative_list), sampled_negative, record[q_col])
+                if sampled_negative not in record[q_col]:
+                    triples.add((record[a_col], np.random.choice(record[q_col]), sampled_negative))
+                    #print(len(triples))
                 if len(triples) >= self.n_samples:
                     return list(triples)
         return list(triples)

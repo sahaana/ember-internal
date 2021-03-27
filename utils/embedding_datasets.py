@@ -91,9 +91,26 @@ class MARCODataset(EmberTripletDataset):
             triples.append((record[a_col], record[p_col], record[n_col]))"""
         #print("am I here now??")
         triplets = supervision.to_numpy(dtype='object')
-        #samples = np.random.choice(np.arange(len(triplets)), size=self.n_samples, replace=False)
-        return triplets[:self.n_samples] 
+        samples = np.random.choice(len(triplets), size=self.n_samples, replace=False)
+        return triplets[samples,:]  
 
+class MARCORandomDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "QID_a"
+        q_col = "PID_p"
+        idx = self.df_r.index
+        
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=3)
+        while len(triples) < self.n_samples:
+            for _, record in supervision.iterrows():
+                random_negative = np.random.choice(idx)
+                if random_negative not in record[q_col]:
+                    triples.add((record[a_col], np.random.choice(record[q_col]), random_negative))
+                if len(triples) >= self.n_samples:
+                    return li
+    
     
 class SQuADDataset(EmberTripletDataset):
     def gen_triplets(self, 

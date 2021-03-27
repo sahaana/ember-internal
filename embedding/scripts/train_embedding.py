@@ -82,6 +82,10 @@ model_train = {
 
 def train_embedding(config):
     conf = SimpleNamespace(**config)
+    
+    if 'pos_frac' not in conf.__dict__:
+        conf.pos_frac = 1
+    
     if conf.data in ['imdb_wiki', 'SQuAD_sent', 'MSMARCO', 'deepmatcher', 'small_imdb_fuzzy', 'hard_imdb_fuzzy',
                      'main_fuzzy', 'hard_fuzzy', 'easy_fuzzy', 'dm_blocked']:
         left = pd.read_pickle(conf.datapath_l)
@@ -95,18 +99,18 @@ def train_embedding(config):
     #bert_model = DistilBertModel.from_pretrained(conf.bert_path, return_dict=True)
          
     if 'negatives' in conf.model_name:
-        train_data =  DataLoader(HNdataset[conf.data](left, right, conf.train_size, conf.column, train_supervision, params = {'negatives':conf.negatives}), 
+        train_data =  DataLoader(HNdataset[conf.data](left, right, conf.train_size, conf.column, train_supervision, params = {'negatives': conf.negatives, 'pos_frac': conf.pos_frac}), 
                             batch_size=conf.batch_size,
                             shuffle = True
                             )  
 
     elif 'random' in conf.model_name:
-        train_data =  DataLoader(randDataset[conf.data](left, right, conf.train_size, conf.column, train_supervision), 
+        train_data =  DataLoader(randDataset[conf.data](left, right, conf.train_size, conf.column, train_supervision, params = {'pos_frac': conf.pos_frac}), 
                             batch_size=conf.batch_size,
                             shuffle = True
                             )    
     else: 
-        train_data = DataLoader(dataset[conf.data](left, right, conf.train_size, conf.column, train_supervision), 
+        train_data = DataLoader(dataset[conf.data](left, right, conf.train_size, conf.column, train_supervision, params = {'pos_frac': conf.pos_frac}), 
                                 batch_size=conf.batch_size,
                                 shuffle = True
                                 )

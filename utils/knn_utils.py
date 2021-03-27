@@ -73,6 +73,23 @@ def return_metrics(res: pd.DataFrame, k_list: List[int], thresh_list: List[float
 
 ## KNN Modules ############################################################################################
 
+def perf_measure(y_actual, y_hat):
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+
+    for i in range(len(y_hat)): 
+        if y_actual[i]==y_hat[i]==1:
+            TP += 1
+        if y_hat[i]==1 and y_actual[i]!=y_hat[i]:
+            FP += 1
+        if y_actual[i]==y_hat[i]==0:
+            TN += 1
+        if y_hat[i]==0 and y_actual[i]!=y_hat[i]:
+            FN += 1
+
+    return(TP, FP, TN, FN)
 
 def knn_deepmatcher_recall(dists: np.array, 
                            neibs: np.array, 
@@ -80,12 +97,17 @@ def knn_deepmatcher_recall(dists: np.array,
                            left_indexing: np.array,
                            right_indexing: np.array,
                            k: int = None,
-                           thresh: float = None):
+                           thresh: float = None,
+                           dynamic: float = None):
     neibs = right_indexing[neibs]
     if k is not None:
         l, r = np.where(dists <= np.max(dists[:,:k], axis=1)[:,None]) ## to get all equidistant mins
-    else:
+    elif thresh is not None:
         l, r = np.where(dists <= thresh) 
+    elif dynamic is not None:
+        d = dists.copy()
+        d[(d[:,1] - d[:,0]) > dynamic * (d[:,2] - d[:,1])] = 0
+        l, r = np.where(d[:,:1] == 0)
     
     top_index = defaultdict(set)
     for i,j in zip(l,r):
@@ -99,7 +121,7 @@ def knn_deepmatcher_recall(dists: np.array,
             predicted += [1]
         else:
             predicted += [0]
-    return *precision_recall_fscore_support(true, predicted, average = 'binary'), predicted
+    return *precision_recall_fscore_support(true, predicted, average = 'binary'), perf_measure(true, predicted), predicted
 
         
 def knn_IMDB_wiki_recall(dists: np.array,

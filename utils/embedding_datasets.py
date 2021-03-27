@@ -7,6 +7,27 @@ import pandas as pd
 from transformers import AutoTokenizer, BertTokenizer, DistilBertTokenizer
 
 
+def update_supervision(supervision: pd.DataFrame, 
+                       n_samples: int,
+                       frac_pos: float,
+                       skip: int = 1):
+    
+    if frac_pos < 1:
+        index = supervision.index[::skip]
+        #print(len(index))
+        sample = np.random.choice(index, size=int(frac_pos*len(index)), replace=False)
+        #print(len(sample))
+        if skip > 1:
+            sample = np.hstack([sample + i for i in range(skip)])
+        #print(len(supervision.loc[sample].copy()))
+        output = supervision.loc[sample].copy()
+        n_samples = len(output)
+        return output, n_samples
+    return supervision, n_samples
+
+# supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=3)
+# supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=1)
+
 class EmberEvalDataset(torch.utils.data.Dataset):
     def __init__(self, 
                  df: pd.DataFrame, 
@@ -89,6 +110,7 @@ class SQuADDataset(EmberTripletDataset):
             triples.append((record[a_col], record[p_col], record[n_col]))
             if len(triples) >= self.n_samples:
                 break"""
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=3)
         triplets = supervision.to_numpy(dtype='object')
         #samples = np.random.choice(np.arange(len(triplets)), size=self.n_samples, replace=False)
         return triplets[:self.n_samples] 
@@ -100,6 +122,7 @@ class SQuADRandomDataset(EmberTripletDataset):
         a_col = "QID_a"
         q_col = "SID_p"
         
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=3)
         while len(triples) < self.n_samples:
             for _, record in supervision.iterrows():
                 random_negative = np.random.choice(self.df_r.index)
@@ -116,6 +139,7 @@ class IMDBWikiDataset(EmberTripletDataset):
         a_col = "IMDB_ID"
         q_col = "QID"
         
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=1)
         while len(triples) < self.n_samples:
             for _, record in supervision.iterrows():
                 random_negative = np.random.choice(self.df_r.index)
@@ -134,6 +158,7 @@ class IMDBWikiHardNegativeDataset(EmberTripletDataset):
         q_col = "QID"
         negatives = pd.read_pickle(self.params['negatives'])
         
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=1)
         while len(triples) < self.n_samples:
             for idx, record in supervision.iterrows():
                 negative_list = negatives.loc[idx][q_col]
@@ -151,6 +176,7 @@ class IMDBFuzzyDataset(EmberTripletDataset):
         a_col = "FUZZY_ID"
         q_col = "tconst"
         
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=1)
         while len(triples) < self.n_samples:
             for _, record in supervision.iterrows():
                 random_negative = np.random.choice(self.df_r.index)
@@ -168,6 +194,7 @@ class IMDBFuzzyHardNegativeDataset(EmberTripletDataset):
         q_col = "tconst"
         negatives = pd.read_pickle(self.params['negatives'])
         
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=1)
         while len(triples) < self.n_samples:
             for idx, record in supervision.iterrows():
                 negative_list = negatives.loc[idx][q_col]
@@ -185,6 +212,7 @@ class DMBlockedDataset(EmberTripletDataset):
         a_col = "ltable_id"
         q_col = "rtable_id"
         
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=1)
         while len(triples) < self.n_samples:
             for _, record in supervision.iterrows():
                 random_negative = np.random.choice(self.df_r.index)
@@ -202,6 +230,7 @@ class DMHardNegativeBlockedDataset(EmberTripletDataset):
         q_col = "rtable_id"
         negatives = pd.read_pickle(self.params['negatives'])
         
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=1)
         while len(triples) < self.n_samples:
             for idx, record in supervision.iterrows():
                 negative_list = negatives.loc[idx][q_col]

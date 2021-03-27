@@ -109,7 +109,8 @@ class MARCORandomDataset(EmberTripletDataset):
                 if random_negative not in record[q_col]:
                     triples.add((record[a_col], np.random.choice(record[q_col]), random_negative))
                 if len(triples) >= self.n_samples:
-                    return li
+                    return list(triples)
+        return list(triples)
     
     
 class SQuADDataset(EmberTripletDataset):

@@ -21,7 +21,7 @@ from transformers import AutoTokenizer, DistilBertModel
 
 sys.path.append('/lfs/1/sahaana/enrichment/ember/utils')
 from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, IMDBFuzzyDataset, EmberEvalDataset, DMBlockedDataset, DMHardNegativeBlockedDataset, IMDBWikiHardNegativeDataset, IMDBFuzzyHardNegativeDataset, SQuADRandomDataset,MARCORandomDataset
-from embedding_models import TripletSingleBERTModel, TripletDoubleBERTModel, PreTrainedBERTModel
+from embedding_models import TripletSingleBERTModel, TripletDoubleBERTModel, PreTrainedBERTModel, FrozenSingleBERTModel
 from embedding_utils import param_header, tokenize_batch  
 from embedding_runner import train_emb_model, eval_model
 from knn_utils import FaissKNeighbors, compute_top_k_pd, knn_IMDB_wiki_recall, knn_SQuAD_sent_recall, knn_MARCO_recall, knn_deepmatcher_recall, knn_IMDB_fuzzy_recall, knn_DM_blocked_recall  
@@ -72,13 +72,15 @@ knn_routine = {
 model_arch = {
                 'single-triplet': TripletSingleBERTModel, 
                 'double-triplet': TripletDoubleBERTModel,
-                'pretrained': PreTrainedBERTModel
+                'pretrained': PreTrainedBERTModel,
+                'frozen': FrozenSingleBERTModel
              }
 
 model_train = {
                 'single-triplet': True, 
                 'double-triplet': True,
-                'pretrained': False
+                'pretrained': False,
+                'frozen': True,
              }
 
 def train_embedding(config):

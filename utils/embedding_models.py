@@ -28,7 +28,7 @@ class BertPooler(nn.Module):
             pooled = hidden_states[:, 0]
         elif self.pooling == "MEAN":
             pooled = hidden_states.mean(axis=1)
-            
+        # Then we run it through a linear layer and optional activation     
         pooled_output = self.dense(pooled)
         if self.pool_activation == 'tanh':
             pooled_output = self.tanh(pooled_output)
@@ -82,7 +82,39 @@ class TripletSingleBERTModel(nn.Module):
         output = self.bert(inputs, attention_mask=input_mask).last_hidden_state
         output = self.pooler(output)
         return output
+
+class FrozenSingleBERTModel(nn.Module):
+    def __init__(self, final_size, pooling, bert_path, model_type='distilbert', pool_activation=None): 
+        super().__init__()
+        if model_type == 'distilbert':
+            self.bert = DistilBertModel.from_pretrained(bert_path, return_dict=True)
+        else:
+            self.bert = BertModel.from_pretrained(bert_path, return_dict=True)
+            
+        for param in self.bert.parameters():
+            param.requires_grad = False    
+        self.pooler = BertPooler(self.bert.config, final_size, pooling, pool_activation)
+
+    def forward(self, a, p, n, a_mask, p_mask, n_mask):
+        output_a = self.bert(a, attention_mask=a_mask).last_hidden_state
+        output_p = self.bert(p, attention_mask=p_mask).last_hidden_state
+        output_n = self.bert(n, attention_mask=n_mask).last_hidden_state
+        
+        output_a = self.pooler(output_a)
+        output_p = self.pooler(output_p)
+        output_n = self.pooler(output_n)
+
+        return output_a, output_p, output_n 
     
+    def return_emb(self, a, a_mask):
+        output_a = self.bert(a, attention_mask=a_mask).last_hidden_state
+        output_a = self.pooler(output_a)
+        return output_a
+    
+    def downstream_embedding(self, inputs, input_mask):
+        output = self.bert(inputs, attention_mask=input_mask).last_hidden_state
+        output = self.pooler(output)
+        return output
     
 class PreTrainedBERTModel(nn.Module):
     def __init__(self, final_size = None, pooling = 'CLS', 

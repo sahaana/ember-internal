@@ -127,7 +127,7 @@ def time_all(iters=25):
         
     print()
 
-    MS Marco
+    #MS Marco
     data_base = '/lfs/1/sahaana/enrichment/data/MSMARCO/'
     A = pd.read_pickle(data_base + 'dev_tableA_processed.pkl')      
 

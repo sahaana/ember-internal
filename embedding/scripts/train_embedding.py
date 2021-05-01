@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, DistilBertModel
 
 sys.path.append('/lfs/1/sahaana/enrichment/ember/utils')
-from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, IMDBFuzzyDataset, EmberEvalDataset, DMBlockedDataset, DMHardNegativeBlockedDataset, IMDBWikiHardNegativeDataset, IMDBFuzzyHardNegativeDataset, SQuADRandomDataset,MARCORandomDataset
+from embedding_datasets import IMDBWikiDataset, SQuADDataset, MARCODataset, DeepMatcherDataset, IMDBFuzzyDataset, EmberEvalDataset, DMBlockedDataset, DMHardNegativeBlockedDataset, IMDBWikiHardNegativeDataset, IMDBFuzzyHardNegativeDataset, SQuADRandomDataset,MARCORandomDataset,SQuADHardNegativeDataset
 from embedding_models import TripletSingleBERTModel, TripletDoubleBERTModel, PreTrainedBERTModel, FrozenSingleBERTModel
 from embedding_utils import param_header, tokenize_batch  
 from embedding_runner import train_emb_model, eval_model
@@ -49,7 +49,8 @@ HNdataset = {
                 'main_fuzzy': IMDBFuzzyHardNegativeDataset,
                 'hard_fuzzy': IMDBFuzzyHardNegativeDataset,
                 'easy_fuzzy': IMDBFuzzyHardNegativeDataset,
-                'dm_blocked': DMHardNegativeBlockedDataset
+                'dm_blocked': DMHardNegativeBlockedDataset,
+                'SQuAD_sent': SQuADHardNegativeDataset,
              }
 
 randDataset = {'SQuAD_sent': SQuADRandomDataset,

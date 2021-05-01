@@ -16,6 +16,7 @@ from embedding_models import TripletSingleBERTModel
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 from embedding_runner import eval_model
+from embedding_datasets import EmberEvalDataset
 
 
 def compute_emb(input_df: pd.DataFrame, 
@@ -116,6 +117,7 @@ def time_all(iters=25):
         print()
         print(dm_data[i])
         A = data_base + f"/dm_blocked/{dm_data[i]}/tableA_processed.pkl"
+        A = pd.read_pickle(A).reset_index()
 
         results = [compute_emb(A, data_col) for i in range(iters)]
         timings['data'].append(dm_data[i])
@@ -132,7 +134,7 @@ def time_all(iters=25):
     A = pd.read_pickle(data_base + 'dev_tableA_processed.pkl')      
 
     results = [compute_emb(A, data_col) for i in range(iters)]
-    timings['data'].append(dm_data[i])
+    timings['data'].append("MARCO")
     timings['results'].append(results)
     timings['avg'].append(np.mean(results))
     print('marco Done')

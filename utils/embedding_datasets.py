@@ -150,6 +150,25 @@ class SQuADRandomDataset(EmberTripletDataset):
                     return list(triples)
         return list(triples)
 
+class SQuADHardNegativeDataset(EmberTripletDataset):
+    def gen_triplets(self, 
+                     supervision: pd.DataFrame):
+        triples = set()
+        a_col = "QID_a"
+        q_col = "SID_p"
+        negatives = pd.read_pickle(self.params['negatives'])
+        
+        supervision, self.n_samples = update_supervision(supervision, self.n_samples, frac_pos=self.params['pos_frac'], skip=1)
+        while len(triples) < self.n_samples:
+            for idx, record in supervision.iterrows():
+                negative_list = negatives.loc[idx][q_col]
+                sampled_negative = np.random.choice(negative_list)
+                if sampled_negative != record[q_col][0]:
+                    triples.add((record[a_col], record[q_col][0], sampled_negative))
+                if len(triples) >= self.n_samples:
+                    return list(triples)
+        return list(triples)
+    
 class IMDBWikiDataset(EmberTripletDataset):
     def gen_triplets(self, 
                      supervision: pd.DataFrame):

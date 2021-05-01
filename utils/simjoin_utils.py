@@ -123,6 +123,48 @@ def old_knn_sim_join_recall(dists: np.array,
            np.mean(MRR_results), np.mean(num_retrieved_results) 
 
 
+def knn_sim_join_recall_correct(dists: np.array,
+                                neibs: np.array,
+                                supervision: pd.DataFrame,
+                                left_indexing: np.array,
+                                comp_mode: str,
+                                mode: str = "QID",
+                                k: int = None,
+                                thresh: float = None):
+    candidate_matches = {}
+    if k is not None:
+        neibs = neibs[:,:k]
+        for i in range(neibs.shape[0]):
+            candidate_matches[left_indexing[i]] = neibs[i,:]
+    else:
+        pass # TODO
+    
+    results = []
+    MRR_results = []
+    all_captured = []
+    
+    for idx, row in supervision.iterrows():
+        true_matches = set(row[mode])
+        matches = 0
+        mrr_count = 0
+        first_relevant = np.inf
+        
+        if idx in candidate_matches:
+            candidates = candidate_matches[idx]
+            for entry in candidates:
+                mrr_count += 1.
+                if entry in true_matches:
+                    first_relevant = min(mrr_count, first_relevant)
+                    matches += 1
+        all_matches = 1 if len(true_matches) == matches else 0
+        one_match = 1 if matches > 0 else 0
+
+        results.append(one_match)
+        all_captured.append(all_matches)
+        MRR_results.append(1./first_relevant)
+    return np.mean(results), np.sum(results), np.mean(all_captured), np.sum(all_captured), \
+           np.mean(MRR_results), k    
+
 
 def knn_sim_join_recall(dists: np.array,
                         neibs: np.array,
